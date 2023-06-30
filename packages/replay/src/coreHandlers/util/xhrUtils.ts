@@ -102,11 +102,13 @@ function _prepareXhrData(
     networkRequestHeaders,
     requestBodySize,
     options.networkCaptureBodies ? getBodyString(input) : undefined,
+    options.filterNetwork,
   );
   const response = buildNetworkRequestOrResponse(
     networkResponseHeaders,
     responseBodySize,
     options.networkCaptureBodies ? hint.xhr.responseText : undefined,
+    options.filterNetwork,
   );
 
   return {

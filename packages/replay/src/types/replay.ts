@@ -58,6 +58,10 @@ export interface BeforeAddRecordingEvent {
   (event: ReplayFrameEvent): ReplayFrameEvent | null | undefined;
 }
 
+export interface FilterNetwork {
+  (info: ReplayNetworkRequestOrResponse): ReplayNetworkRequestOrResponse;
+}
+
 export interface ReplayNetworkOptions {
   /**
    * Capture request/response details for XHR/Fetch requests that match the given URLs.
@@ -84,6 +88,11 @@ export interface ReplayNetworkOptions {
    * Defaults to true.
    */
   networkCaptureBodies: boolean;
+
+  /**
+   * Allows to filter network request/response
+   */
+  filterNetwork?: FilterNetwork,
 
   /**
    * Capture the following request headers, in addition to the default ones.
@@ -295,9 +304,9 @@ export interface DeprecatedPrivacyOptions {
 
 export interface ReplayConfiguration
   extends ReplayIntegrationPrivacyOptions,
-    OptionalReplayPluginOptions,
-    DeprecatedPrivacyOptions,
-    Pick<RecordingOptions, 'maskAllText' | 'maskAllInputs'> {}
+  OptionalReplayPluginOptions,
+  DeprecatedPrivacyOptions,
+  Pick<RecordingOptions, 'maskAllText' | 'maskAllInputs'> { }
 
 interface CommonEventContext {
   /**
