@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "lib": [
+      "webworker",
+      "scripthost"
+    ],
+    "esModuleInterop": true,
+    "target": "es3",
+    "strictPropertyInitialization": false
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}
