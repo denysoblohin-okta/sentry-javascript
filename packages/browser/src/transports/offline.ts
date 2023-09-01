@@ -25,6 +25,9 @@ import { parseEnvelope, serializeEnvelope } from '@sentry/utils';
 // limitations under the License.
 
 type Store = <T>(callback: (store: IDBObjectStore) => T | PromiseLike<T>) => Promise<T>;
+type SuccessRequestCallback<T> = (data: T) => void;
+type ErrorRequestCallback = (error: DOMException) => void;
+type ItemValue = Uint8Array | string;
 
 function promisifyRequest<T = undefined>(request: IDBRequest<T> | IDBTransaction): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -33,6 +36,13 @@ function promisifyRequest<T = undefined>(request: IDBRequest<T> | IDBTransaction
     // @ts-ignore - file size hacks
     request.onabort = request.onerror = () => reject(request.error);
   });
+}
+
+function makeRequest<T = undefined>(request: IDBRequest<T>, callback: SuccessRequestCallback<T>, errorCallback?: ErrorRequestCallback) {
+  // @ts-ignore - file size hacks
+  request.oncomplete = request.onsuccess = () => callback(request.result);
+  // @ts-ignore - file size hacks
+  request.onabort = request.onerror = () => errorCallback?.(request.error);
 }
 
 /** Create or open an IndexedDb store */
@@ -48,10 +58,14 @@ function keys(store: IDBObjectStore): Promise<number[]> {
   return promisifyRequest(store.getAllKeys() as IDBRequest<number[]>);
 }
 
+function keysRequest(store: IDBObjectStore, callback: SuccessRequestCallback<number[]>) {
+  makeRequest<number[]>(store.getAllKeys() as IDBRequest<number[]>, callback);
+}
+
 /** Insert into the store */
-export function insert(store: Store, value: Uint8Array | string, maxQueueSize: number, toStart = false): Promise<void> {
+export function insert(store: Store, value: ItemValue, maxQueueSize: number, toStart = false): Promise<void> {
   return store(store => {
-    return keys(store).then(keys => {
+    keysRequest(store, (keys) => {
       if (keys.length >= maxQueueSize) {
         console.log('!!!!!!!!!!!!!!!! Queue is full') // todo: remove
         return;
@@ -60,24 +74,24 @@ export function insert(store: Store, value: Uint8Array | string, maxQueueSize: n
       // We insert with an incremented key so that the entries are popped in order
       const key = toStart ? 0 : Math.max(...keys, 0) + 1;
       store.put(value, key);
-      return promisifyRequest(store.transaction);
     });
+    return promisifyRequest(store.transaction);
   });
 }
 
 /** Pop the oldest value from the store */
-export function pop(store: Store, offset = 0): Promise<Uint8Array | string | undefined> {
+export function pop(store: Store, offset = 0): Promise<ItemValue> {
   return store(store => {
-    return keys(store).then(keys => {
-      if (keys.length === 0) {
-        return undefined;
+    let value: ItemValue;
+    keysRequest(store, (keys) => {
+      if (keys.length) {
+        makeRequest<ItemValue>(store.get(keys[offset]) as IDBRequest<ItemValue>, (res) => {
+          value = res;
+          store.delete(keys[offset]);
+        });
       }
-
-      return promisifyRequest(store.get(keys[offset])).then(value => {
-        store.delete(keys[offset]);
-        return promisifyRequest(store.transaction).then(() => value);
-      });
     });
+    return promisifyRequest(store.transaction).then(() => value);
   });
 }
 
