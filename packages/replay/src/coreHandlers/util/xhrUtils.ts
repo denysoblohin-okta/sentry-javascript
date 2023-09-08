@@ -24,13 +24,13 @@ export async function captureXhrBreadcrumbToReplay(
   options: ReplayNetworkOptions & { replay: ReplayContainer },
 ): Promise<void> {
   try {
-    const data = _prepareXhrData(breadcrumb, hint, options);
+    const data = await _prepareXhrData(breadcrumb, hint, options);
 
     // Create a replay performance entry from this breadcrumb
     const result = makeNetworkReplayBreadcrumb('resource.xhr', data);
     addNetworkBreadcrumb(options.replay, result);
   } catch (error) {
-    __DEBUG_BUILD__ && logger.error('[Replay] Failed to capture fetch breadcrumb', error);
+    console.error('[Replay] Failed to capture fetch breadcrumb', error); // todo: remove
   }
 }
 
@@ -59,11 +59,24 @@ export function enrichXhrBreadcrumb(
   }
 }
 
-function _prepareXhrData(
+function blobToText(blob: Blob): Promise<string | ArrayBuffer | null> {
+  return new Promise(function (resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      resolve(ev.target!.result);
+    };
+    reader.onerror = function () {
+      reject();
+    };
+    reader.readAsText(blob);
+  });
+}
+
+async function _prepareXhrData(
   breadcrumb: Breadcrumb & { data: XhrBreadcrumbData },
   hint: XhrHint,
   options: ReplayNetworkOptions,
-): ReplayNetworkRequestData | null {
+): Promise<ReplayNetworkRequestData | null> {
   const { startTimestamp, endTimestamp, input, xhr } = hint;
 
   const {
@@ -102,11 +115,23 @@ function _prepareXhrData(
     networkRequestHeaders,
     requestBodySize,
     options.networkCaptureBodies ? getBodyString(input) : undefined,
+    options.filterNetwork,
   );
+
+  let responseText;
+  if (options.networkCaptureBodies) {
+    if (hint.xhr.responseType === 'blob') {
+      responseText = await blobToText(hint.xhr.response) as string;
+    } else {
+      responseText = hint.xhr.responseText;
+    }
+  }
+
   const response = buildNetworkRequestOrResponse(
     networkResponseHeaders,
     responseBodySize,
-    options.networkCaptureBodies ? hint.xhr.responseText : undefined,
+    responseText,
+    options.filterNetwork,
   );
 
   return {

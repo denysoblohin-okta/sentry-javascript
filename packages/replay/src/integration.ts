@@ -79,6 +79,7 @@ export class Replay implements Integration {
     networkCaptureBodies = true,
     networkRequestHeaders = [],
     networkResponseHeaders = [],
+    filterNetwork = undefined,
 
     mask = [],
     unmask = [],
@@ -156,6 +157,7 @@ export class Replay implements Integration {
       networkRequestHeaders: _getMergedNetworkHeaders(networkRequestHeaders),
       networkResponseHeaders: _getMergedNetworkHeaders(networkResponseHeaders),
       beforeAddRecordingEvent,
+      filterNetwork,
 
       _experiments,
     };

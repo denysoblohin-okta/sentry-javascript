@@ -37,6 +37,7 @@ export function handleNetworkBreadcrumbs(replay: ReplayContainer): void {
       networkCaptureBodies,
       networkRequestHeaders,
       networkResponseHeaders,
+      filterNetwork,
     } = replay.getOptions();
 
     const options: ExtendedNetworkBreadcrumbsOptions = {
@@ -47,6 +48,7 @@ export function handleNetworkBreadcrumbs(replay: ReplayContainer): void {
       networkCaptureBodies,
       networkRequestHeaders,
       networkResponseHeaders,
+      filterNetwork,
     };
 
     if (client && client.on) {

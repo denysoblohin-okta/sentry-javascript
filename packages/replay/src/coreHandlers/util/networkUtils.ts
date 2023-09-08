@@ -3,6 +3,7 @@ import { dropUndefinedKeys, stringMatchesSomePattern } from '@sentry/utils';
 
 import { NETWORK_BODY_MAX_SIZE, WINDOW } from '../../constants';
 import type {
+  FilterNetwork,
   NetworkBody,
   NetworkMetaWarning,
   NetworkRequestData,
@@ -136,6 +137,7 @@ export function buildNetworkRequestOrResponse(
   headers: Record<string, string>,
   bodySize: number | undefined,
   body: string | undefined,
+  filterNetwork?: FilterNetwork,
 ): ReplayNetworkRequestOrResponse | undefined {
   if (!bodySize && Object.keys(headers).length === 0) {
     return undefined;
@@ -154,13 +156,16 @@ export function buildNetworkRequestOrResponse(
     };
   }
 
-  const info: ReplayNetworkRequestOrResponse = {
+  let info: ReplayNetworkRequestOrResponse = {
     headers,
     size: bodySize,
   };
 
   const { body: normalizedBody, warnings } = normalizeNetworkBody(body);
   info.body = normalizedBody;
+  if (filterNetwork) {
+    info = filterNetwork(info);
+  }
   if (warnings.length > 0) {
     info._meta = {
       warnings,

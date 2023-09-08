@@ -105,7 +105,7 @@ async function _prepareFetchData(
 }
 
 function _getRequestInfo(
-  { networkCaptureBodies, networkRequestHeaders }: ReplayNetworkOptions,
+  { networkCaptureBodies, networkRequestHeaders, filterNetwork }: ReplayNetworkOptions,
   input: FetchHint['input'],
   requestBodySize?: number,
 ): ReplayNetworkRequestOrResponse | undefined {
@@ -118,7 +118,7 @@ function _getRequestInfo(
   // We only want to transmit string or string-like bodies
   const requestBody = _getFetchRequestArgBody(input);
   const bodyStr = getBodyString(requestBody);
-  return buildNetworkRequestOrResponse(headers, requestBodySize, bodyStr);
+  return buildNetworkRequestOrResponse(headers, requestBodySize, bodyStr, filterNetwork);
 }
 
 async function _getResponseInfo(
@@ -127,6 +127,7 @@ async function _getResponseInfo(
     networkCaptureBodies,
     textEncoder,
     networkResponseHeaders,
+    filterNetwork,
   }: ReplayNetworkOptions & {
     textEncoder: TextEncoderInternal;
   },
@@ -159,7 +160,7 @@ async function _getResponseInfo(
     }
 
     if (networkCaptureBodies) {
-      return buildNetworkRequestOrResponse(headers, size, bodyText);
+      return buildNetworkRequestOrResponse(headers, size, bodyText, filterNetwork);
     }
 
     return buildNetworkRequestOrResponse(headers, size, undefined);
